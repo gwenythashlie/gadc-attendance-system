@@ -1,0 +1,1481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intern Attendance System</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Socket.IO -->
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+    
+    <style>
+        :root {
+            --bg-primary: #0a0e27;
+            --bg-secondary: #111632;
+            --bg-card: #1a1f3a;
+            --text-primary: #e8e9f3;
+            --text-secondary: #9195ad;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-green: #10b981;
+            --accent-orange: #f59e0b;
+            --border-color: #2a2f4a;
+            --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+        
+        /* Animated Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 3rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-card);
+            border-radius: 2rem;
+            font-size: 0.875rem;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow);
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient-1);
+        }
+        
+        .stat-card.present::before { background: var(--gradient-1); }
+        .stat-card.absent::before { background: var(--gradient-2); }
+        .stat-card.active::before { background: var(--gradient-3); }
+        
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .stat-icon {
+            font-size: 1.5rem;
+            opacity: 0.3;
+        }
+        
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* Live Feed */
+        .live-feed {
+            background: var(--bg-card);
+            border-radius: 1rem;
+            border: 1px solid var(--border-color);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .feed-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .feed-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+        
+        .live-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--accent-green);
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .feed-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .feed-column {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            min-height: 200px;
+        }
+
+        .feed-column-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .feed-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-height: 420px;
+            overflow-y: auto;
+        }
+
+        @media (max-width: 900px) {
+            .feed-columns {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .feed-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-radius: 0.75rem;
+            border-left: 3px solid var(--accent-blue);
+            animation: slideIn 0.3s ease;
+        }
+        
+        .feed-item.time-in {
+            border-left-color: var(--accent-green);
+        }
+        
+        .feed-item.time-out {
+            border-left-color: var(--accent-orange);
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .feed-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--gradient-1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+        
+        .feed-content {
+            flex: 1;
+        }
+        
+        .feed-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        
+        .feed-details {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+        
+        .feed-time {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+        
+        .feed-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .feed-badge.in {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--accent-green);
+        }
+        
+        .feed-badge.out {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--accent-orange);
+        }
+        
+        /* Login Page */
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+        
+        .login-card {
+            background: var(--bg-card);
+            padding: 3rem;
+            border-radius: 1.5rem;
+            border: 1px solid var(--border-color);
+            max-width: 400px;
+            width: 100%;
+            box-shadow: var(--shadow);
+        }
+        
+        .login-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .login-subtitle {
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            color: var(--text-primary);
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 0.875rem 1.5rem;
+            background: var(--gradient-1);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        /* Navigation */
+        .nav-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+        }
+        
+        .nav-tab {
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            color: var(--text-secondary);
+            border: none;
+            border-radius: 0.5rem;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-tab.active {
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+        
+        .page {
+            display: none;
+        }
+        
+        .page.active {
+            display: block;
+        }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+        
+        .empty-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-blue);
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header-actions {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .nav-tabs {
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Page -->
+    <div id="loginPage" class="login-container">
+        <div class="login-card">
+            <h1 class="login-title">Welcome Back</h1>
+            <p class="login-subtitle">Sign in to access the dashboard</p>
+            
+            <form id="loginForm">
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input type="text" class="form-input" id="username" value="admin" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" id="password" value="admin123" required>
+                </div>
+                
+                <button type="submit" class="btn">Sign In</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Main Dashboard -->
+    <div id="dashboardPage" style="display: none;">
+        <div class="container">
+            <header>
+                <div class="logo">🎓 Intern Attendance System</div>
+                <div class="header-actions">
+                    <div class="status-indicator">
+                        <div class="status-dot"></div>
+                        <span>System Online</span>
+                    </div>
+                    <button class="btn" onclick="logout()" style="width: auto; padding: 0.5rem 1.5rem;">Logout</button>
+                </div>
+            </header>
+            
+            <!-- Navigation -->
+            <div class="nav-tabs">
+                <button class="nav-tab active" onclick="showPage('dashboard')">Dashboard</button>
+                <button class="nav-tab" onclick="showPage('employees')">Employees</button>
+                <button class="nav-tab" onclick="showPage('enrollment')">Enrollment</button>
+                <button class="nav-tab" onclick="showPage('devices')">Devices</button>
+                <button class="nav-tab" onclick="showPage('reports')">Reports</button>
+            </div>
+            
+            <!-- Dashboard Page -->
+            <div id="dashboardContent" class="page active">
+                <!-- Stats -->
+                <div class="stats-grid">
+                    <div class="stat-card present">
+                        <div class="stat-header">
+                            <span class="stat-label">Present Today</span>
+                            <span class="stat-icon">✓</span>
+                        </div>
+                        <div class="stat-value" id="statPresent">0</div>
+                    </div>
+                    
+                    <div class="stat-card absent">
+                        <div class="stat-header">
+                            <span class="stat-label">Absent</span>
+                            <span class="stat-icon">✗</span>
+                        </div>
+                        <div class="stat-value" id="statAbsent">0</div>
+                    </div>
+                    
+                    <div class="stat-card active">
+                        <div class="stat-header">
+                            <span class="stat-label">Currently In</span>
+                            <span class="stat-icon">👤</span>
+                        </div>
+                        <div class="stat-value" id="statActive">0</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <span class="stat-label">Total Interns</span>
+                            <span class="stat-icon">👥</span>
+                        </div>
+                        <div class="stat-value" id="statTotal">0</div>
+                    </div>
+                </div>
+                
+                <!-- Live Feed -->
+                <div class="live-feed">
+                    <div class="feed-header">
+                        <h2 class="feed-title">Live Activity</h2>
+                        <span class="live-badge">
+                            <span class="status-dot"></span>
+                            LIVE
+                        </span>
+                    </div>
+                    <div class="feed-columns">
+                        <div class="feed-column">
+                            <div class="feed-column-title">
+                                <span>✅ Time In</span>
+                                <span class="feed-badge in">IN</span>
+                            </div>
+                            <div class="feed-list" id="liveFeedIn">
+                                <div class="empty-state">
+                                    <div class="empty-icon">🟢</div>
+                                    <p>Waiting for TIME IN...</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="feed-column">
+                            <div class="feed-column-title">
+                                <span>🏁 Time Out</span>
+                                <span class="feed-badge out">OUT</span>
+                            </div>
+                            <div class="feed-list" id="liveFeedOut">
+                                <div class="empty-state">
+                                    <div class="empty-icon">🟠</div>
+                                    <p>Waiting for TIME OUT...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Employees Page -->
+            <div id="employeesContent" class="page">
+                <div class="live-feed">
+                    <div class="feed-header">
+                        <h2 class="feed-title">All Employees</h2>
+                        <button class="btn" onclick="showAddEmployeeModal()" style="width: auto; padding: 0.5rem 1.5rem;">+ Add Employee</button>
+                    </div>
+                    <div id="employeesList"></div>
+                </div>
+            </div>
+            
+            <!-- Enrollment Page -->
+            <div id="enrollmentContent" class="page">
+                <div class="live-feed">
+                    <div class="feed-header">
+                        <h2 class="feed-title">RFID Card Enrollment</h2>
+                    </div>
+                    <div style="padding: 2rem;">
+                        <div style="max-width: 600px; margin: 0 auto;">
+                            <p style="color: var(--text-secondary); margin-bottom: 2rem; text-align: center;">
+                                Select an employee and tap your RFID card or keychain to assign it.
+                            </p>
+                            
+                            <div style="background: var(--bg-card); padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
+                                <label style="display: block; margin-bottom: 1rem; color: var(--text-primary); font-weight: 500;">
+                                    Select Employee
+                                </label>
+                                <select id="enrollmentEmployeeSelect" style="width: 100%; padding: 0.75rem; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem; margin-bottom: 1.5rem;">
+                                    <option value="">-- Choose an employee --</option>
+                                </select>
+                                
+                                <label style="display: block; margin-bottom: 1rem; color: var(--text-primary); font-weight: 500;">
+                                    RFID Card UID
+                                </label>
+                                <input 
+                                    type="text" 
+                                    id="rfidUidInput" 
+                                    placeholder="e.g., 04A1B2C3D4E5F6" 
+                                    style="width: 100%; padding: 0.75rem; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem; font-family: 'JetBrains Mono', monospace; margin-bottom: 1.5rem;"
+                                />
+                                
+                                <button onclick="assignRFIDCard()" class="btn" style="width: 100%; padding: 0.75rem;">
+                                    🏷️ Assign Card
+                                </button>
+                            </div>
+                            
+                            <div style="background: var(--bg-card); padding: 1.5rem; border-radius: 8px; border-left: 3px solid var(--accent-blue);">
+                                <h3 style="font-size: 1rem; margin-bottom: 0.5rem;">💡 How to find RFID UID:</h3>
+                                <ol style="color: var(--text-secondary); margin-left: 1.5rem; line-height: 1.8;">
+                                    <li>Tap your RFID card/keychain on the ESP32 device</li>
+                                    <li>Check the Serial Monitor (it will show "Card not registered" with the UID)</li>
+                                    <li>Copy the UID and paste it here</li>
+                                    <li>Or use an RFID reader app on your phone</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Add Employee Modal -->
+            <div id="addEmployeeModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 1000; align-items: center; justify-content: center;">
+                <div style="background: var(--bg-card); padding: 2rem; border-radius: 16px; max-width: 500px; width: 90%; border: 1px solid var(--border-color);">
+                    <h2 style="margin-bottom: 1.5rem; font-size: 1.5rem;">Add New Employee</h2>
+                    
+                    <form id="addEmployeeForm" onsubmit="createEmployee(event)">
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; color: var(--text-primary); font-weight: 500;">
+                                Full Name *
+                            </label>
+                            <input 
+                                type="text" 
+                                id="employeeFullName" 
+                                required 
+                                placeholder="Juan Dela Cruz"
+                                style="width: 100%; padding: 0.75rem; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem;"
+                            />
+                        </div>
+                        
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; color: var(--text-primary); font-weight: 500;">
+                                Employee Code *
+                            </label>
+                            <input 
+                                type="text" 
+                                id="employeeCode" 
+                                required 
+                                placeholder="INT-001"
+                                style="width: 100%; padding: 0.75rem; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem; font-family: 'JetBrains Mono', monospace;"
+                            />
+                        </div>
+                        
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; color: var(--text-primary); font-weight: 500;">
+                                Role
+                            </label>
+                            <select 
+                                id="employeeRole"
+                                style="width: 100%; padding: 0.75rem; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem;"
+                            >
+                                <option value="intern">Intern</option>
+                                <option value="employee">Employee</option>
+                                <option value="supervisor">Supervisor</option>
+                                <option value="manager">Manager</option>
+                            </select>
+                        </div>
+                        
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; color: var(--text-primary); font-weight: 500;">
+                                Program *
+                            </label>
+                            <select 
+                                id="employeeProgram"
+                                style="width: 100%; padding: 0.75rem; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem;"
+                            >
+                                <option value="CpE">BS Computer Engineering (320 hrs)</option>
+                                <option value="IT">BS Information Technology (500 hrs)</option>
+                            </select>
+                        </div>
+                        
+                        <div style="display: flex; gap: 1rem;">
+                            <button type="button" onclick="closeAddEmployeeModal()" style="flex: 1; padding: 0.75rem; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; font-size: 1rem;">
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn" style="flex: 1; padding: 0.75rem;">
+                                Create Employee
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Devices Page -->
+            <div id="devicesContent" class="page">
+                <div class="live-feed">
+                    <div class="feed-header">
+                        <h2 class="feed-title">📱 Device Management</h2>
+                        <button class="btn" onclick="showAddDeviceModal()" style="width: auto; padding: 0.5rem 1.5rem;">+ Add Device</button>
+                    </div>
+                    <div id="devicesList"></div>
+                </div>
+            </div>
+            
+            <!-- Reports Page -->
+            <div id="reportsContent" class="page">
+                <div class="live-feed">
+                    <div class="feed-header">
+                        <h2 class="feed-title">📊 DTR (Daily Time Record)</h2>
+                        <button class="btn" onclick="loadDTRReport()" style="width: auto; padding: 0.5rem 1.5rem;">🔄 Refresh</button>
+                    </div>
+                    
+                    <div style="padding: 1rem; background: var(--bg-secondary); border-radius: 8px; margin-bottom: 1.5rem;">
+                        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                            <div style="flex: 1; min-width: 200px;">
+                                <label style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.875rem;">Start Date</label>
+                                <input 
+                                    type="date" 
+                                    id="dtrStartDate" 
+                                    value="2026-01-28"
+                                    style="width: 100%; padding: 0.5rem; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px;"
+                                />
+                            </div>
+                            <div style="flex: 1; min-width: 200px;">
+                                <label style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.875rem;">End Date</label>
+                                <input 
+                                    type="date" 
+                                    id="dtrEndDate"
+                                    style="width: 100%; padding: 0.5rem; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px;"
+                                />
+                            </div>
+                            <button onclick="loadDTRReport()" class="btn" style="align-self: end; padding: 0.5rem 1.5rem; margin-bottom: 0;">
+                                Generate Report
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="dtrReportContainer"></div>
+                </div>
+            </div>
+            
+            <!-- Add Device Modal -->
+            <div id="addDeviceModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 1000; align-items: center; justify-content: center;">
+                <div style="background: var(--bg-card); padding: 2rem; border-radius: 16px; max-width: 500px; width: 90%; border: 1px solid var(--border-color);">
+                    <h2 style="margin-bottom: 1.5rem; font-size: 1.5rem;">📱 Add New Device</h2>
+                    
+                    <form id="addDeviceForm" onsubmit="createDevice(event)">
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; color: var(--text-primary); font-weight: 500;">
+                                Device Name *
+                            </label>
+                            <input 
+                                type="text" 
+                                id="deviceName" 
+                                required 
+                                placeholder="Main Entrance Scanner"
+                                style="width: 100%; padding: 0.75rem; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem;"
+                            />
+                        </div>
+                        
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; color: var(--text-primary); font-weight: 500;">
+                                Location (Optional)
+                            </label>
+                            <input 
+                                type="text" 
+                                id="deviceLocation" 
+                                placeholder="Front Door / Building A"
+                                style="width: 100%; padding: 0.75rem; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem;"
+                            />
+                        </div>
+                        
+                        <div style="display: flex; gap: 1rem;">
+                            <button type="button" onclick="closeAddDeviceModal()" style="flex: 1; padding: 0.75rem; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; font-size: 1rem;">
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn" style="flex: 1; padding: 0.75rem;">
+                                Create Device
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Device API Key Modal -->
+            <div id="deviceApiKeyModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 1001; align-items: center; justify-content: center;">
+                <div style="background: var(--bg-card); padding: 2rem; border-radius: 16px; max-width: 600px; width: 90%; border: 1px solid var(--border-color);">
+                    <h2 style="margin-bottom: 1rem; font-size: 1.5rem;">✅ Device Created Successfully!</h2>
+                    
+                    <div style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; border-left: 3px solid var(--accent-green);">
+                        <p style="margin-bottom: 1rem; color: var(--text-secondary);">
+                            ⚠️ <strong>IMPORTANT:</strong> Copy this API key now. You won't be able to see it again!
+                        </p>
+                        
+                        <label style="display: block; margin-bottom: 0.5rem; color: var(--text-primary); font-weight: 500;">
+                            Device API Key:
+                        </label>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <input 
+                                type="text" 
+                                id="generatedApiKey" 
+                                readonly
+                                style="flex: 1; padding: 0.75rem; background: var(--bg-primary); color: var(--accent-green); border: 1px solid var(--border-color); border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.875rem;"
+                            />
+                            <button onclick="copyApiKey()" class="btn" style="width: auto; padding: 0.75rem 1.5rem;">
+                                📋 Copy
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                        <h3 style="font-size: 1rem; margin-bottom: 0.75rem;">📝 Next Steps:</h3>
+                        <ol style="color: var(--text-secondary); margin-left: 1.5rem; line-height: 1.8;">
+                            <li>Copy the API key above</li>
+                            <li>Open your ESP32 code (esp32-attendance.ino)</li>
+                            <li>Find: <code style="background: var(--bg-primary); padding: 0.2rem 0.4rem; border-radius: 4px;">const char* DEVICE_API_KEY</code></li>
+                            <li>Paste the API key between the quotes</li>
+                            <li>Upload the code to your ESP32</li>
+                        </ol>
+                    </div>
+                    
+                    <button onclick="closeDeviceApiKeyModal()" class="btn" style="width: 100%; padding: 0.75rem;">
+                        Got it!
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Configuration
+        const API_URL = 'http://localhost:3000';
+        const WS_URL = 'ws://localhost:3000';
+        
+        let socket;
+        let token = localStorage.getItem('token');
+        
+        // Initialize
+        if (token) {
+            showDashboard();
+        }
+        
+        // Login
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch(`${API_URL}/api/admin/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    token = data.token;
+                    localStorage.setItem('token', token);
+                    showDashboard();
+                } else {
+                    alert('Login failed: ' + data.error);
+                }
+            } catch (error) {
+                alert('Login error: ' + error.message);
+            }
+        });
+        
+        function logout() {
+            localStorage.removeItem('token');
+            if (socket) socket.disconnect();
+            document.getElementById('loginPage').style.display = 'flex';
+            document.getElementById('dashboardPage').style.display = 'none';
+        }
+        
+        function showDashboard() {
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('dashboardPage').style.display = 'block';
+            connectWebSocket();
+            loadDashboardData();
+        }
+        
+        function connectWebSocket() {
+            socket = io(WS_URL);
+            
+            socket.on('connect', () => {
+                console.log('WebSocket connected');
+            });
+            
+            socket.on('attendance_update', (data) => {
+                addToLiveFeed(data);
+                loadDashboardData();
+            });
+            
+            socket.on('disconnect', () => {
+                console.log('WebSocket disconnected');
+            });
+        }
+        
+        async function loadDashboardData() {
+            try {
+                const response = await fetch(`${API_URL}/api/dashboard/today`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await response.json();
+                
+                document.getElementById('statPresent').textContent = data.present;
+                document.getElementById('statAbsent').textContent = data.absent;
+                document.getElementById('statActive').textContent = data.currently_in;
+                document.getElementById('statTotal').textContent = data.total;
+                
+                // Populate recent taps into separate columns
+                const feedIn = document.getElementById('liveFeedIn');
+                const feedOut = document.getElementById('liveFeedOut');
+                const recentTaps = data.recent_taps || [];
+                const inTaps = recentTaps.filter(tap => !tap.time_out);
+                const outTaps = recentTaps.filter(tap => tap.time_out);
+
+                if (feedIn) {
+                    feedIn.innerHTML = inTaps.length > 0
+                        ? inTaps.map(tap => createFeedItem({
+                            name: tap.full_name,
+                            employee_code: tap.employee_code,
+                            action: 'TIME_IN',
+                            time: tap.time_in
+                        })).join('')
+                        : createEmptyFeedState('🟢', 'Waiting for TIME IN...');
+                }
+
+                if (feedOut) {
+                    feedOut.innerHTML = outTaps.length > 0
+                        ? outTaps.map(tap => createFeedItem({
+                            name: tap.full_name,
+                            employee_code: tap.employee_code,
+                            action: 'TIME_OUT',
+                            time: tap.time_out
+                        })).join('')
+                        : createEmptyFeedState('🟠', 'Waiting for TIME OUT...');
+                }
+            } catch (error) {
+                console.error('Dashboard load error:', error);
+            }
+        }
+        
+        function addToLiveFeed(data) {
+            const isTimeIn = data.action === 'TIME_IN';
+            const feed = document.getElementById(isTimeIn ? 'liveFeedIn' : 'liveFeedOut');
+            if (!feed) return;
+
+            const isEmpty = feed.querySelector('.empty-state');
+            if (isEmpty) {
+                feed.innerHTML = '';
+            }
+
+            const item = createFeedItem(data);
+            feed.insertAdjacentHTML('afterbegin', item);
+
+            // Keep only last 10 items per column
+            while (feed.children.length > 10) {
+                feed.removeChild(feed.lastChild);
+            }
+        }
+
+        function createEmptyFeedState(icon, message) {
+            return `
+                <div class="empty-state">
+                    <div class="empty-icon">${icon}</div>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+        
+        function createFeedItem(data) {
+            const initials = data.name.split(' ').map(n => n[0]).join('').substring(0, 2);
+            const actionClass = data.action === 'TIME_IN' ? 'time-in' : 'time-out';
+            const badgeClass = data.action === 'TIME_IN' ? 'in' : 'out';
+            const actionText = data.action === 'TIME_IN' ? 'Timed In' : 'Timed Out';
+            const time = new Date(data.time).toLocaleTimeString();
+            
+            return `
+                <div class="feed-item ${actionClass}">
+                    <div class="feed-avatar">${initials}</div>
+                    <div class="feed-content">
+                        <div class="feed-name">${data.name}</div>
+                        <div class="feed-details">${data.employee_code}</div>
+                    </div>
+                    <div>
+                        <div class="feed-badge ${badgeClass}">${actionText}</div>
+                        <div class="feed-time">${time}</div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function showPage(page) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            
+            document.getElementById(page + 'Content').classList.add('active');
+            event.target.classList.add('active');
+            
+            // Load data when switching pages
+            if (page === 'employees') {
+                loadEmployees();
+            } else if (page === 'enrollment') {
+                loadEmployeesForEnrollment();
+            } else if (page === 'devices') {
+                loadDevices();
+            } else if (page === 'reports') {
+                document.getElementById('dtrEndDate').value = new Date().toISOString().split('T')[0];
+                loadDTRReport();
+            }
+        }
+        
+        // Employee Management Functions
+        function showAddEmployeeModal() {
+            document.getElementById('addEmployeeModal').style.display = 'flex';
+        }
+        
+        function closeAddEmployeeModal() {
+            document.getElementById('addEmployeeModal').style.display = 'none';
+            document.getElementById('addEmployeeForm').reset();
+        }
+        
+        async function createEmployee(event) {
+            event.preventDefault();
+            
+            const fullName = document.getElementById('employeeFullName').value;
+            const employeeCode = document.getElementById('employeeCode').value;
+            const role = document.getElementById('employeeRole').value;
+            const program = document.getElementById('employeeProgram').value;
+            
+            try {
+                const response = await fetch(`${API_URL}/api/employees`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        full_name: fullName,
+                        employee_code: employeeCode,
+                        role: role,
+                        program: program
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert(`✅ Employee ${fullName} created successfully!`);
+                    closeAddEmployeeModal();
+                    loadEmployees();
+                } else {
+                    alert('❌ Error: ' + data.error);
+                }
+            } catch (error) {
+                alert('❌ Error creating employee: ' + error.message);
+            }
+        }
+        
+        async function loadEmployees() {
+            try {
+                const response = await fetch(`${API_URL}/api/employees`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const employees = await response.json();
+                
+                const employeesHtml = employees.map(emp => `
+                    <div class="feed-item" style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div class="feed-avatar">${emp.full_name.split(' ').map(n => n[0]).join('').substring(0, 2)}</div>
+                            <div>
+                                <div class="feed-name">${emp.full_name}</div>
+                                <div class="feed-details">${emp.employee_code} • ${emp.role}</div>
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            ${emp.rfid_uid 
+                                ? `<div class="feed-badge in">✓ Card Assigned</div><div class="feed-time">${emp.rfid_uid}</div>` 
+                                : `<div class="feed-badge" style="background: var(--bg-secondary); color: var(--text-secondary);">No Card</div>`
+                            }
+                        </div>
+                    </div>
+                `).join('');
+                
+                document.getElementById('employeesList').innerHTML = employeesHtml || '<div style="text-align: center; padding: 3rem; color: var(--text-secondary);">No employees yet. Click "Add Employee" to create one.</div>';
+                
+            } catch (error) {
+                console.error('Error loading employees:', error);
+                document.getElementById('employeesList').innerHTML = '<div style="text-align: center; padding: 3rem; color: var(--text-secondary);">Error loading employees</div>';
+            }
+        }
+        
+        async function loadEmployeesForEnrollment() {
+            try {
+                const response = await fetch(`${API_URL}/api/employees`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const employees = await response.json();
+                
+                const select = document.getElementById('enrollmentEmployeeSelect');
+                select.innerHTML = '<option value="">-- Choose an employee --</option>' + 
+                    employees.map(emp => 
+                        `<option value="${emp.id}">${emp.full_name} (${emp.employee_code})${emp.rfid_uid ? ' - Already has card' : ''}</option>`
+                    ).join('');
+                    
+            } catch (error) {
+                console.error('Error loading employees for enrollment:', error);
+            }
+        }
+        
+        async function assignRFIDCard() {
+            const employeeId = document.getElementById('enrollmentEmployeeSelect').value;
+            const rfidUid = document.getElementById('rfidUidInput').value.trim().toUpperCase();
+            
+            if (!employeeId) {
+                alert('⚠️ Please select an employee');
+                return;
+            }
+            
+            if (!rfidUid) {
+                alert('⚠️ Please enter the RFID UID');
+                return;
+            }
+            
+            // Validate UID format (basic check)
+            if (rfidUid.length < 8) {
+                alert('⚠️ RFID UID seems too short. Please check the value.');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/api/employees/${employeeId}/assign-card`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ rfid_uid: rfidUid })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert('✅ RFID card assigned successfully!\n\nYou can now use this card to tap in/out.');
+                    document.getElementById('rfidUidInput').value = '';
+                    document.getElementById('enrollmentEmployeeSelect').value = '';
+                    loadEmployeesForEnrollment();
+                } else {
+                    alert('❌ Error: ' + data.error + (data.assigned_to ? `\n\nThis card is already assigned to: ${data.assigned_to}` : ''));
+                }
+            } catch (error) {
+                alert('❌ Error assigning card: ' + error.message);
+            }
+        }
+        
+        // Device Management Functions
+        function showAddDeviceModal() {
+            document.getElementById('addDeviceModal').style.display = 'flex';
+        }
+        
+        function closeAddDeviceModal() {
+            document.getElementById('addDeviceModal').style.display = 'none';
+            document.getElementById('addDeviceForm').reset();
+        }
+        
+        function closeDeviceApiKeyModal() {
+            document.getElementById('deviceApiKeyModal').style.display = 'none';
+            loadDevices(); // Refresh device list
+        }
+
+        // DTR Report Functions
+        async function loadDTRReport() {
+            const startDate = document.getElementById('dtrStartDate').value || '2026-01-28';
+            const endDate = document.getElementById('dtrEndDate').value || new Date().toISOString().split('T')[0];
+            
+            try {
+                const response = await fetch(`${API_URL}/api/reports/dtr?startDate=${startDate}&endDate=${endDate}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayDTRReport(data);
+                } else {
+                    alert('Error: ' + (data.error || 'Failed to load DTR'));
+                }
+            } catch (error) {
+                console.error('Error loading DTR:', error);
+                alert('Failed to load DTR report');
+            }
+        }
+        
+        function displayDTRReport(data) {
+            const container = document.getElementById('dtrReportContainer');
+            
+            if (!data.employees || data.employees.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 3rem; color: var(--text-secondary);">No attendance data found for this period.</div>';
+                return;
+            }
+            
+            const reportHtml = `
+                <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3 style="font-size: 1.125rem; margin: 0;">Report Period</h3>
+                        <span style="color: var(--text-secondary);">${formatDate(data.startDate)} to ${formatDate(data.endDate)}</span>
+                    </div>
+                </div>
+                
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; background: var(--bg-secondary); border-radius: 8px; overflow: hidden;">
+                        <thead>
+                            <tr style="background: var(--bg-card);">
+                                <th style="padding: 1rem; text-align: left; border-bottom: 1px solid var(--border-color);">Employee Code</th>
+                                <th style="padding: 1rem; text-align: left; border-bottom: 1px solid var(--border-color);">Full Name</th>
+                                <th style="padding: 1rem; text-align: center; border-bottom: 1px solid var(--border-color);">Program</th>
+                                <th style="padding: 1rem; text-align: center; border-bottom: 1px solid var(--border-color);">Hours Completed</th>
+                                <th style="padding: 1rem; text-align: center; border-bottom: 1px solid var(--border-color);">Required Hours</th>
+                                <th style="padding: 1rem; text-align: center; border-bottom: 1px solid var(--border-color);">Remaining</th>
+                                <th style="padding: 1rem; text-align: center; border-bottom: 1px solid var(--border-color);">Progress</th>
+                                <th style="padding: 1rem; text-align: center; border-bottom: 1px solid var(--border-color);">Days</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.employees.map(emp => {
+                                const progressPercent = Math.min(100, parseFloat(emp.progress_percentage));
+                                const isComplete = emp.total_hours >= emp.required_hours;
+                                const progressColor = isComplete ? 'var(--accent-green)' : 
+                                                    progressPercent >= 75 ? 'var(--accent-blue)' : 
+                                                    progressPercent >= 50 ? 'var(--accent-orange)' : 
+                                                    'var(--accent-purple)';
+                                
+                                return `
+                                    <tr style="border-bottom: 1px solid var(--border-color);">
+                                        <td style="padding: 1rem; font-family: 'JetBrains Mono', monospace; color: var(--accent-blue);">${emp.employee_code}</td>
+                                        <td style="padding: 1rem;">${emp.full_name}</td>
+                                        <td style="padding: 1rem; text-align: center;">
+                                            <span style="padding: 0.25rem 0.75rem; background: ${emp.program === 'CpE' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(139, 92, 246, 0.2)'}; border: 1px solid ${emp.program === 'CpE' ? 'var(--accent-blue)' : 'var(--accent-purple)'}; border-radius: 12px; font-size: 0.875rem;">
+                                                ${emp.program === 'CpE' ? 'BS CpE' : 'BS IT'}
+                                            </span>
+                                        </td>
+                                        <td style="padding: 1rem; text-align: center; font-weight: 600; color: ${progressColor};">
+                                            ${emp.total_hours.toFixed(2)} hrs
+                                        </td>
+                                        <td style="padding: 1rem; text-align: center; color: var(--text-secondary);">
+                                            ${emp.required_hours} hrs
+                                        </td>
+                                        <td style="padding: 1rem; text-align: center; color: ${emp.hours_remaining > 0 ? 'var(--text-secondary)' : 'var(--accent-green)'};">
+                                            ${emp.hours_remaining > 0 ? emp.hours_remaining.toFixed(2) + ' hrs' : 'COMPLETE ✓'}
+                                        </td>
+                                        <td style="padding: 1rem; text-align: center;">
+                                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                                <div style="flex: 1; background: var(--bg-card); height: 8px; border-radius: 4px; overflow: hidden;">
+                                                    <div style="width: ${progressPercent}%; height: 100%; background: ${progressColor}; transition: width 0.3s;"></div>
+                                                </div>
+                                                <span style="font-size: 0.875rem; color: ${progressColor}; font-weight: 600; min-width: 45px;">
+                                                    ${progressPercent.toFixed(0)}%
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td style="padding: 1rem; text-align: center; color: var(--text-secondary);">
+                                            ${emp.session_count}
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div style="margin-top: 1.5rem; padding: 1rem; background: var(--bg-secondary); border-radius: 8px; border-left: 3px solid var(--accent-blue);">
+                    <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
+                        <div>
+                            <div style="color: var(--text-secondary); font-size: 0.875rem;">Total Employees</div>
+                            <div style="font-size: 1.5rem; font-weight: 600;">${data.employees.length}</div>
+                        </div>
+                        <div>
+                            <div style="color: var(--text-secondary); font-size: 0.875rem;">Completed</div>
+                            <div style="font-size: 1.5rem; font-weight: 600; color: var(--accent-green);">
+                                ${data.employees.filter(e => e.total_hours >= e.required_hours).length}
+                            </div>
+                        </div>
+                        <div>
+                            <div style="color: var(--text-secondary); font-size: 0.875rem;">In Progress</div>
+                            <div style="font-size: 1.5rem; font-weight: 600; color: var(--accent-blue);">
+                                ${data.employees.filter(e => e.total_hours < e.required_hours).length}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            container.innerHTML = reportHtml;
+        }
+        
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+        
+        async function createDevice(event) {
+            event.preventDefault();
+            
+            const deviceName = document.getElementById('deviceName').value;
+            const location = document.getElementById('deviceLocation').value;
+            
+            try {
+                const response = await fetch(`${API_URL}/api/devices`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        device_name: deviceName,
+                        location: location || null
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Show the API key modal
+                    document.getElementById('generatedApiKey').value = data.api_key;
+                    closeAddDeviceModal();
+                    document.getElementById('deviceApiKeyModal').style.display = 'flex';
+                } else {
+                    alert('❌ Error: ' + data.error);
+                }
+            } catch (error) {
+                alert('❌ Error creating device: ' + error.message);
+            }
+        }
+        
+        async function loadDevices() {
+            try {
+                const response = await fetch(`${API_URL}/api/devices`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const devices = await response.json();
+                
+                const devicesHtml = devices.map(device => {
+                    const lastSeen = device.last_seen 
+                        ? new Date(device.last_seen).toLocaleString()
+                        : 'Never';
+                    
+                    const statusClass = device.status === 'active' ? 'in' : '';
+                    const statusText = device.status === 'active' ? '✓ Active' : '✗ Inactive';
+                    
+                    return `
+                        <div class="feed-item" style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 1rem; flex: 1;">
+                                <div class="feed-avatar" style="background: var(--gradient-3);">📱</div>
+                                <div style="flex: 1;">
+                                    <div class="feed-name">${device.device_name}</div>
+                                    <div class="feed-details">
+                                        ${device.location || 'No location set'} • 
+                                        <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;">ID: ${device.device_id}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div class="feed-badge ${statusClass}">${statusText}</div>
+                                <div class="feed-time">Last seen: ${lastSeen}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                document.getElementById('devicesList').innerHTML = devicesHtml || 
+                    '<div style="text-align: center; padding: 3rem; color: var(--text-secondary);">' +
+                    '<div style="font-size: 3rem; margin-bottom: 1rem;">📱</div>' +
+                    '<p>No devices registered yet.</p>' +
+                    '<p style="margin-top: 0.5rem;">Click "Add Device" to register your ESP32.</p>' +
+                    '</div>';
+                
+            } catch (error) {
+                console.error('Error loading devices:', error);
+                document.getElementById('devicesList').innerHTML = 
+                    '<div style="text-align: center; padding: 3rem; color: var(--text-secondary);">Error loading devices</div>';
+            }
+        }
+        
+        function copyApiKey() {
+            const apiKeyInput = document.getElementById('generatedApiKey');
+            apiKeyInput.select();
+            apiKeyInput.setSelectionRange(0, 99999); // For mobile
+            
+            try {
+                document.execCommand('copy');
+                alert('✅ API Key copied to clipboard!\n\nNow paste it in your ESP32 code.');
+            } catch (err) {
+                // Fallback for modern browsers
+                navigator.clipboard.writeText(apiKeyInput.value).then(() => {
+                    alert('✅ API Key copied to clipboard!\n\nNow paste it in your ESP32 code.');
+                }).catch(() => {
+                    alert('⚠️ Please copy the API key manually.');
+                });
+            }
+        }
+    </script>
+</body>
+</html>

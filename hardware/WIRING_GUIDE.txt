@@ -1,0 +1,128 @@
+/*
+ * ESP32 RFID ATTENDANCE SYSTEM - QUICK REFERENCE
+ * 
+ * WIRING DIAGRAM:
+ * ═══════════════════════════════════════════════════
+ * 
+ *     RC522 RFID Reader        →        ESP32
+ * ───────────────────────────────────────────────────
+ *        SDA (SS)              →        GPIO 5
+ *        SCK                   →        GPIO 18
+ *        MOSI                  →        GPIO 23
+ *        MISO                  →        GPIO 19
+ *        RST                   →        GPIO 22
+ *        3.3V                  →        3.3V ⚠️
+ *        GND                   →        GND
+ * 
+ *     Optional Buzzer          →        ESP32
+ * ───────────────────────────────────────────────────
+ *        Buzzer +              →        GPIO 4
+ *        Buzzer -              →        GND
+ * 
+ *     Optional LEDs            →        ESP32
+ * ───────────────────────────────────────────────────
+ *        Green LED +           →        GPIO 2 (built-in)
+ *        Red LED +             →        GPIO 15
+ *        LED -                 →        GND (via 220Ω resistor)
+ * 
+ * ═══════════════════════════════════════════════════
+ * 
+ * ⚠️ IMPORTANT NOTES:
+ * 
+ * 1. RC522 MUST use 3.3V power (NOT 5V!)
+ * 2. Connect GND pins together
+ * 3. Double-check all SPI connections
+ * 4. Use resistors (220Ω) for external LEDs
+ * 
+ * ═══════════════════════════════════════════════════
+ * 
+ * CONFIGURATION STEPS:
+ * 
+ * 1. Update Wi-Fi credentials in code:
+ *    const char* WIFI_SSID = "YourWiFi";
+ *    const char* WIFI_PASSWORD = "YourPassword";
+ * 
+ * 2. Update server IP address:
+ *    const char* SERVER_URL = "http://192.168.1.100:3000/api/tap";
+ * 
+ * 3. Get Device API Key from admin dashboard:
+ *    - Login to http://YOUR_IP:3000
+ *    - Go to Devices tab
+ *    - Click "Add Device"
+ *    - Copy the API key
+ * 
+ * 4. Paste API key in code:
+ *    const char* DEVICE_API_KEY = "your-api-key-here";
+ * 
+ * ═══════════════════════════════════════════════════
+ * 
+ * ARDUINO IDE SETTINGS:
+ * 
+ * Board:        ESP32 Dev Module
+ * Upload Speed: 115200
+ * Port:         COM3 (or your ESP32 port)
+ * 
+ * Required Libraries:
+ * - MFRC522 by GithubCommunity
+ * - ArduinoJson by Benoit Blanchon (v6.x)
+ * 
+ * ═══════════════════════════════════════════════════
+ * 
+ * TESTING:
+ * 
+ * 1. Open Serial Monitor (115200 baud)
+ * 2. Should see: "[✓] System ready!"
+ * 3. Tap RFID card
+ * 4. Note the UID from Serial Monitor
+ * 5. Register UID in admin dashboard:
+ *    - Employees → Add Employee
+ *    - Enrollment → Select employee → Enter UID
+ * 6. Tap registered card → Success!
+ * 
+ * ═══════════════════════════════════════════════════
+ * 
+ * LED & BUZZER FEEDBACK:
+ * 
+ * SUCCESS (TIME_IN/OUT):
+ * - 2 short beeps (high pitch)
+ * - 2 quick LED blinks
+ * 
+ * ERROR (card not registered):
+ * - 1 long beep (low pitch)
+ * - 5 fast LED blinks
+ * 
+ * READY (on startup):
+ * - 3 slow LED blinks
+ * 
+ * ═══════════════════════════════════════════════════
+ * 
+ * TROUBLESHOOTING:
+ * 
+ * Problem: Wi-Fi won't connect
+ * → Check SSID/password spelling
+ * → ESP32 only supports 2.4GHz Wi-Fi
+ * 
+ * Problem: Can't reach server
+ * → Check server IP address
+ * → Ensure backend is running (npm start)
+ * → ESP32 and server must be on same network
+ * 
+ * Problem: "Invalid API key"
+ * → Create device in admin dashboard first
+ * → Copy API key exactly (no spaces)
+ * 
+ * Problem: RFID not reading cards
+ * → Check RC522 is using 3.3V (NOT 5V!)
+ * → Verify all SPI wire connections
+ * → Try different RFID cards
+ * 
+ * Problem: "Card not registered"
+ * → Add employee in dashboard first
+ * → Copy UID from Serial Monitor
+ * → Go to Enrollment tab and assign UID
+ * 
+ * ═══════════════════════════════════════════════════
+ * 
+ * For detailed setup guide, see: hardware/README.md
+ * 
+ */
