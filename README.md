@@ -1,103 +1,103 @@
-# 🎓 Modern RFID Attendance System for Interns
+# 🎓 RFID Attendance System
 
-A complete, production-ready attendance system with real-time updates, beautiful UI, and easy setup.
+> **Complete documentation is now available in [DOCUMENTATION.md](DOCUMENTATION.md)**
+
+A production-ready attendance system with real-time updates, DTR reporting, and beautiful UI.
 
 ![System Status](https://img.shields.io/badge/Status-Production%20Ready-success)
 ![Platform](https://img.shields.io/badge/Platform-ESP32-blue)
 ![Backend](https://img.shields.io/badge/Backend-Node.js-green)
-![Database](https://img.shields.io/badge/Database-MySQL-orange)
+![Database](https://img.shields.io/badge/Database-Supabase-orange)
+
+## 📚 Quick Links
+
+- **[Complete Documentation](DOCUMENTATION.md)** - Full setup guide, API docs, troubleshooting
+- **[Hardware Guide](hardware/README.md)** - Wiring and ESP32 setup
+- **[Backend API](backend/API_DOCUMENTATION.md)** - API reference and examples
+
+## 🚀 Quick Start
+
+### 1. Setup Database
+- Create Supabase account (free)
+- Run SQL migrations from `backend/migrations/`
+
+### 2. Setup Backend
+```bash
+cd backend
+npm install
+# Configure .env with Supabase credentials
+npm start
+```
+
+### 3. Setup Frontend
+```bash
+npx http-server frontend -p 5173
+```
+
+### 4. Upload ESP32 Code
+- Configure WiFi in `hardware/esp32-attendance.ino`
+- Upload to ESP32
+
+### 5. Access Dashboard
+- Open http://localhost:5173
+- Login: `admin` / `admin123`
 
 ## ✨ Features
 
-### 🎯 Core Features
-- ✅ **One-Tap IN/OUT** - Smart logic determines if it's time in or time out
-- ✅ **Real-time Dashboard** - See attendance updates instantly via WebSockets
-- ✅ **RFID Card Management** - Easy enrollment system for assigning cards
-- ✅ **Multi-Device Support** - Manage multiple RFID readers/locations
-- ✅ **Photo ID Cards** - Display employee photos for verification
-- ✅ **Daily/Monthly Reports** - Export attendance data to CSV/Excel
-- ✅ **Audit Logs** - Track all system activities
+### Core Features
+- ✅ **One-Tap IN/OUT** - Smart logic determines time in or time out
+- ✅ **Real-time Dashboard** - Instant updates via WebSockets
+- ✅ **DTR Reports** - Program-based hours tracking (CpE: 320hrs, IT: 500hrs)
+- ✅ **RFID Card Management** - Easy card enrollment
+- ✅ **Multi-Device Support** - Multiple RFID readers
+- ✅ **Photo ID Cards** - Employee photo verification
+- ✅ **Audit Logs** - Complete activity tracking
 
-### 🔒 Security Features
+### Security
 - Device API key authentication
 - Admin JWT authentication
-- Rate limiting on tap endpoint
-- Duplicate tap prevention (10-second cooldown)
-- HTTPS support ready
-- Card-employee binding with photos
+- Rate limiting
+- 10-second tap cooldown
 
-### 💎 User Experience
-- Modern, beautiful dashboard with dark theme
-- Live activity feed
-- Responsive design (works on mobile)
-- Zero-refresh updates
-- Visual feedback for all actions
+### Technology Stack
+- **Hardware**: ESP32 + RC522 RFID Reader
+- **Backend**: Node.js + Express + Socket.IO
+- **Database**: Supabase (PostgreSQL)
+- **Frontend**: HTML5 + CSS3 + Vanilla JS
 
 ## 📁 Project Structure
 
 ```
 attendance-system/
-├── hardware/
-│   └── esp32-attendance.ino      # ESP32 code for RFID reader
-├── backend/
-│   ├── server.js                 # Node.js + Express server
-│   ├── package.json              # Dependencies
-│   ├── .env.example              # Environment variables template
-│   └── migrations/
-│       └── setup.js              # Database setup script
-├── frontend/
-│   └── index.html                # Complete dashboard (HTML/CSS/JS)
-├── SETUP_GUIDE.md                # Detailed setup instructions
-├── QUICKSTART.md                 # Quick installation guide
-└── README.md                     # This file
+├── hardware/          # ESP32 code and wiring guide
+├── backend/           # Node.js server and API
+├── frontend/          # Web dashboard
+└── DOCUMENTATION.md   # Complete documentation
 ```
 
-## 🚀 Quick Start (5 Minutes)
+## 🔧 System Requirements
 
-### Prerequisites
 - ESP32 board + RC522 RFID reader (~$15)
-- Node.js installed (v16+)
-- MySQL database (local or cloud)
-- Arduino IDE (for ESP32)
+- Node.js v16+
+- Supabase account (free)
+- Arduino IDE
 
-### Installation
+## 📖 Documentation
 
-1. **Clone or download this project**
+For complete setup instructions, API documentation, and troubleshooting, see:
 
-2. **Setup Database**
-   ```bash
-   cd backend
-   npm install
-   cp .env.example .env
-   # Edit .env with your database credentials
-   npm run migrate
-   ```
+**[📘 DOCUMENTATION.md](DOCUMENTATION.md)**
 
-3. **Start Backend**
-   ```bash
-   npm start
-   # Server runs on http://localhost:3000
-   ```
+## 🆘 Support
 
-4. **Upload ESP32 Code**
-   - Open `hardware/esp32-attendance.ino` in Arduino IDE
-   - Update WiFi credentials and server URL
-   - Upload to ESP32
-   - Check Serial Monitor for connection status
+- Check [DOCUMENTATION.md](DOCUMENTATION.md) for detailed guides
+- Review troubleshooting section
+- Verify database and API connections
 
-5. **Access Dashboard**
-   - Open: `http://localhost:3000/frontend/index.html`
-   - Login: `admin` / `admin123`
-   - Change password immediately!
+---
 
-📖 **For detailed instructions, see [SETUP_GUIDE.md](./SETUP_GUIDE.md)**
+**Version**: 2.0.0 | **Status**: Production Ready ✅ | **Last Updated**: February 5, 2026
 
-## 🔌 Hardware Wiring
-
-### ESP32 + RC522 Connection
-
-```
-RC522 RFID Reader → ESP32
 ────────────────────────────
 SDA/SS    →  GPIO 5
 SCK       →  GPIO 18
@@ -404,11 +404,3 @@ Built with modern web technologies and best practices for IoT systems.
 - Vanilla JavaScript (no frameworks needed!)
 
 ---
-
-**Ready to get started?** 
-
-1. Read [QUICKSTART.md](./QUICKSTART.md) for fast setup
-2. Or [SETUP_GUIDE.md](./SETUP_GUIDE.md) for detailed instructions
-
-**Happy tracking!** 🚀#   g a d c - a t t e n d a n c e - s y s t e m  
- 
