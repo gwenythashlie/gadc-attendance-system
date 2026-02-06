@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Intern Attendance System</title>
     
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='0.9em' font-size='90'%3E🎓%3C/text%3E%3C/svg%3E">
+    
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -73,14 +76,30 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 3rem;
-            padding-bottom: 2rem;
-            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 1rem;
         }
         
         .logo {
-            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .logo-image {
+            width: auto;
+            height: 75px;
+            max-width: 180px;
+            border-radius: 8px;
+            object-fit: contain;
+            display: block;
+            flex-shrink: 0;
+        }
+        
+        .logo-text {
+            font-size: 1.5rem;
             font-weight: 700;
+            line-height: 1;
+            white-space: nowrap;
             background: var(--gradient-1);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -534,7 +553,11 @@
     <div id="dashboardPage" style="display: none;">
         <div class="container">
             <header>
-                <div class="logo">🎓 Intern Attendance System</div>
+                <div class="logo">
+                    <!-- Replace logo.png with your actual logo file -->
+                    <img src="assets/images/logo.png" class="logo-image" alt="GADC">
+                    <span class="logo-text">Intern Attendance</span>
+                </div>
                 <div class="header-actions">
                     <div class="status-indicator">
                         <div class="status-dot"></div>
@@ -754,6 +777,92 @@
                             </button>
                             <button type="submit" class="btn" style="flex: 1; padding: 0.75rem;">
                                 Create Employee
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Edit Employee Modal -->
+            <div id="editEmployeeModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 1000; align-items: center; justify-content: center;">
+                <div style="background: var(--bg-card); padding: 2rem; border-radius: 16px; max-width: 500px; width: 90%; border: 1px solid var(--border-color);">
+                    <h2 style="margin-bottom: 1.5rem; font-size: 1.5rem;">✏️ Edit Employee</h2>
+                    
+                    <form id="editEmployeeForm" onsubmit="updateEmployee(event)">
+                        <input type="hidden" id="editEmployeeId">
+                        
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; color: var(--text-primary); font-weight: 500;">
+                                Full Name *
+                            </label>
+                            <input 
+                                type="text" 
+                                id="editEmployeeFullName" 
+                                required 
+                                placeholder="Juan Dela Cruz"
+                                style="width: 100%; padding: 0.75rem; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem;"
+                            />
+                        </div>
+                        
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; color: var(--text-primary); font-weight: 500;">
+                                Employee Code *
+                            </label>
+                            <input 
+                                type="text" 
+                                id="editEmployeeCode" 
+                                required 
+                                placeholder="INT-001"
+                                style="width: 100%; padding: 0.75rem; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem; font-family: 'JetBrains Mono', monospace;"
+                            />
+                        </div>
+                        
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; color: var(--text-primary); font-weight: 500;">
+                                Role
+                            </label>
+                            <select 
+                                id="editEmployeeRole"
+                                style="width: 100%; padding: 0.75rem; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem;"
+                            >
+                                <option value="intern">Intern</option>
+                                <option value="employee">Employee</option>
+                                <option value="supervisor">Supervisor</option>
+                                <option value="manager">Manager</option>
+                            </select>
+                        </div>
+                        
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; color: var(--text-primary); font-weight: 500;">
+                                Program *
+                            </label>
+                            <select 
+                                id="editEmployeeProgram"
+                                style="width: 100%; padding: 0.75rem; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem;"
+                            >
+                                <option value="CpE">BS Computer Engineering (320 hrs)</option>
+                                <option value="IT">BS Information Technology (500 hrs)</option>
+                            </select>
+                        </div>
+                        
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; color: var(--text-primary); font-weight: 500;">
+                                RFID Card UID (Optional)
+                            </label>
+                            <input 
+                                type="text" 
+                                id="editEmployeeRFID" 
+                                placeholder="Leave empty to remove card"
+                                style="width: 100%; padding: 0.75rem; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem; font-family: 'JetBrains Mono', monospace;"
+                            />
+                        </div>
+                        
+                        <div style="display: flex; gap: 1rem;">
+                            <button type="button" onclick="closeEditEmployeeModal()" style="flex: 1; padding: 0.75rem; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; font-size: 1rem;">
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn" style="flex: 1; padding: 0.75rem;">
+                                Update Employee
                             </button>
                         </div>
                     </form>
@@ -1093,6 +1202,61 @@
             document.getElementById('addEmployeeForm').reset();
         }
         
+        function showEditEmployeeModal(id, fullName, employeeCode, role, program, rfidUid) {
+            document.getElementById('editEmployeeId').value = id;
+            document.getElementById('editEmployeeFullName').value = fullName;
+            document.getElementById('editEmployeeCode').value = employeeCode;
+            document.getElementById('editEmployeeRole').value = role;
+            document.getElementById('editEmployeeProgram').value = program;
+            document.getElementById('editEmployeeRFID').value = rfidUid || '';
+            document.getElementById('editEmployeeModal').style.display = 'flex';
+        }
+        
+        function closeEditEmployeeModal() {
+            document.getElementById('editEmployeeModal').style.display = 'none';
+            document.getElementById('editEmployeeForm').reset();
+        }
+        
+        async function updateEmployee(event) {
+            event.preventDefault();
+            
+            const employeeId = document.getElementById('editEmployeeId').value;
+            const fullName = document.getElementById('editEmployeeFullName').value;
+            const employeeCode = document.getElementById('editEmployeeCode').value;
+            const role = document.getElementById('editEmployeeRole').value;
+            const program = document.getElementById('editEmployeeProgram').value;
+            const rfidUid = document.getElementById('editEmployeeRFID').value.trim().toUpperCase();
+            
+            try {
+                const response = await fetch(`${API_URL}/api/employees/${employeeId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        full_name: fullName,
+                        employee_code: employeeCode,
+                        role: role,
+                        program: program,
+                        rfid_uid: rfidUid || null
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert(`✅ Employee ${fullName} updated successfully!`);
+                    closeEditEmployeeModal();
+                    loadEmployees();
+                } else {
+                    alert('❌ Error: ' + data.error);
+                }
+            } catch (error) {
+                alert('❌ Error updating employee: ' + error.message);
+            }
+        }
+        
         async function createEmployee(event) {
             event.preventDefault();
             
@@ -1140,18 +1304,23 @@
                 
                 const employeesHtml = employees.map(emp => `
                     <div class="feed-item" style="display: flex; justify-content: space-between; align-items: center;">
-                        <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div style="display: flex; align-items: center; gap: 1rem; flex: 1;">
                             <div class="feed-avatar">${emp.full_name.split(' ').map(n => n[0]).join('').substring(0, 2)}</div>
-                            <div>
+                            <div style="flex: 1;">
                                 <div class="feed-name">${emp.full_name}</div>
-                                <div class="feed-details">${emp.employee_code} • ${emp.role}</div>
+                                <div class="feed-details">${emp.employee_code} • ${emp.role} • ${emp.program === 'CpE' ? 'BS CpE' : 'BS IT'}</div>
                             </div>
                         </div>
-                        <div style="text-align: right;">
-                            ${emp.rfid_uid 
-                                ? `<div class="feed-badge in">✓ Card Assigned</div><div class="feed-time">${emp.rfid_uid}</div>` 
-                                : `<div class="feed-badge" style="background: var(--bg-secondary); color: var(--text-secondary);">No Card</div>`
-                            }
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <div style="text-align: right; margin-right: 0.5rem;">
+                                ${emp.rfid_uid 
+                                    ? `<div class="feed-badge in">✓ Card Assigned</div><div class="feed-time">${emp.rfid_uid}</div>` 
+                                    : `<div class="feed-badge" style="background: var(--bg-secondary); color: var(--text-secondary);">No Card</div>`
+                                }
+                            </div>
+                            <button onclick="showEditEmployeeModal(${emp.id}, '${emp.full_name.replace(/'/g, "\\'")}', '${emp.employee_code}', '${emp.role}', '${emp.program}', '${emp.rfid_uid || ''}')" class="btn" style="width: auto; padding: 0.5rem 1rem; font-size: 0.875rem;">
+                                ✏️ Edit
+                            </button>
                         </div>
                     </div>
                 `).join('');

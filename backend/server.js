@@ -199,18 +199,38 @@ app.post('/api/tap', authenticateDevice, checkTapRateLimit, async (req, res) => 
     }
     
     const today = getLocalDateString();
+    const now = new Date();
+    const currentTime = now.toTimeString().slice(0, 5); // HH:MM format
     
     // Check for existing session today
     const session = await db.getTodaySession(supabase, employee.id, today);
     
-    let action, sessionId;
+    let action, sessionId, isLate = false, notes = [];
     
     if (!session || session.time_out !== null) {
       // No session today OR last session completed → TIME IN
+      
+      // Check if late (after 8:15 AM)
+      if (currentTime > '08:15') {
+        isLate = true;
+        notes.push(`Late arrival: ${currentTime}`);
+      }
+      
       const newSession = await db.createSession(supabase, employee.id, today, deviceId);
       
       if (!newSession) {
         return res.status(500).json({ error: 'Failed to create session' });
+      }
+      
+      // Update session with late status
+      if (isLate) {
+        await supabase
+          .from('attendance_sessions')
+          .update({ 
+            is_late: true,
+            notes: notes.join('; ')
+          })
+          .eq('id', newSession.id);
       }
       
       sessionId = newSession.id;
@@ -218,7 +238,34 @@ app.post('/api/tap', authenticateDevice, checkTapRateLimit, async (req, res) => 
       
     } else {
       // Existing session without time_out → TIME OUT
+      
+      // Validate time out (should not exceed 5:00 PM for counting)
+      const timeIn = new Date(session.time_in);
+      const timeInHour = timeIn.getHours();
+      const timeInMinute = timeIn.getMinutes();
+      
+      // Check if this is lunch time out (around 12:00 PM)
+      if (currentTime >= '11:45' && currentTime <= '12:30') {
+        notes.push('Lunch break time out');
+      }
+      
+      // Check if time in was before 8:00 AM (valid start time)
+      if (timeInHour < 8 || (timeInHour === 8 && timeInMinute === 0)) {
+        // Valid morning time in
+      }
+      
       await db.updateSessionTimeOut(supabase, session.id, deviceId);
+      
+      // Add notes if any
+      if (notes.length > 0) {
+        await supabase
+          .from('attendance_sessions')
+          .update({ 
+            notes: notes.join('; ')
+          })
+          .eq('id', session.id);
+      }
+      
       sessionId = session.id;
       action = 'TIME_OUT';
     }
@@ -238,6 +285,8 @@ app.post('/api/tap', authenticateDevice, checkTapRateLimit, async (req, res) => 
       name: employee.full_name,
       employee_code: employee.employee_code,
       time: new Date().toISOString(),
+      is_late: isLate,
+      notes: notes.join('; ') || null,
       session: {
         ...updatedSession,
         duration_minutes: durationMinutes
@@ -362,6 +411,63 @@ app.post('/api/employees', authenticateAdmin, async (req, res) => {
     } else {
       console.error('Add employee error:', error);
       res.status(500).json({ error: 'Failed to add employee' });
+    }
+  }
+});
+
+// Update employee
+app.put('/api/employees/:id', authenticateAdmin, async (req, res) => {
+  const employeeId = req.params.id;
+  const { full_name, employee_code, role, program, rfid_uid } = req.body;
+  
+  if (!full_name || !employee_code) {
+    return res.status(400).json({ error: 'Name and code required' });
+  }
+  
+  const allowedPrograms = ['CpE', 'IT'];
+  const normalizedProgram = program || 'CpE';
+  
+  if (normalizedProgram && !allowedPrograms.includes(normalizedProgram)) {
+    return res.status(400).json({ error: 'Invalid program. Use CpE or IT' });
+  }
+  
+  try {
+    const { data, error } = await supabase
+      .from('employees')
+      .update({
+        full_name,
+        employee_code,
+        role: role || 'intern',
+        program: normalizedProgram,
+        rfid_uid: rfid_uid || null
+      })
+      .eq('id', employeeId)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    if (!data) {
+      return res.status(404).json({ error: 'Employee not found' });
+    }
+    
+    await db.createAuditLog(supabase, 'employee_updated', 'admin', req.admin.id, { employee_id: employeeId });
+    
+    res.json({
+      id: data.id,
+      full_name: data.full_name,
+      employee_code: data.employee_code,
+      role: data.role,
+      program: data.program,
+      rfid_uid: data.rfid_uid
+    });
+    
+  } catch (error) {
+    if (error.message && error.message.includes('duplicate')) {
+      res.status(400).json({ error: 'Employee code already exists' });
+    } else {
+      console.error('Update employee error:', error);
+      res.status(500).json({ error: 'Failed to update employee' });
     }
   }
 });
